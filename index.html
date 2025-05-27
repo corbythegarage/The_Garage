@@ -1,52 +1,40 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Garage - Car Workshop</title>
-    <link rel="stylesheet" href="style.css">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>The Garage</title>
+    <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-    <header>
-        <img src="logo.jpg" alt="The Garage Logo">
-        <h1>Welcome to The Garage</h1>
+    <header class="hero">
+        <div class="overlay"></div>
+        <div class="hero-content">
+            <img src="logo.jpeg" alt="The Garage Logo" class="hero-logo" />
+            <h1>Your Car, Our Mission</h1>
+            <p>Professional auto repair & diagnostics</p>
+            <a href="#services" class="hero-button">See Services</a>
+        </div>
     </header>
-
-    <nav>
-        <ul>
-            <li><a href="#about">About Us</a></li>
-            <li><a href="#services">Services</a></li>
-            <li><a href="#gallery">Gallery</a></li>
-            <li><a href="#contact">Contact</a></li>
-        </ul>
-    </nav>
 
     <section id="about">
         <h2>About Us</h2>
-        <p>Professional car workshop offering comprehensive repairs and diagnostics.</p>
+        <p>Your trusted automotive repair shop. Precision, reliability, and speed.</p>
     </section>
 
     <section id="services">
         <h2>Our Services</h2>
-        <ul>
-            <li>Computer diagnostics</li>
-            <li>Oil and filter changes</li>
-            <li>Mechanical repairs</li>
-            <li>Air conditioning service</li>
-            <li>Tire service and replacement</li>
+        <ul class="services-list">
+            <li>🔧 Diagnostics</li>
+            <li>🛠 Repairs</li>
+            <li>🧰 Maintenance</li>
+            <li>❄️ AC & Tire Services</li>
         </ul>
-    </section>
-
-    <section id="gallery">
-        <h2>Gallery</h2>
-        <div class="gallery">
-            <img src="A_high-resolution_digital_photograph_captures_an_a.png" alt="Mechanic at work">
-        </div>
     </section>
 
     <section id="contact">
         <h2>Contact</h2>
-        <p>Call or text: <strong>0771 9420696</strong></p>
+        <p>Phone: <strong>0771 9420696</strong></p>
         <button id="callButton">Call Now</button>
     </section>
 
