@@ -31,7 +31,7 @@ body {
 }
 
 .hero-logo {
-    max-width: 470px;
+    max-width: 520px;
     margin-bottom: 1em;
     border: 3px solid #CCCCCC;
     padding: 8px;
@@ -169,5 +169,6 @@ button:hover {
         font-size: 22px;
     }
 }
+
 
 
