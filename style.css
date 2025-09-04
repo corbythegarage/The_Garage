@@ -110,7 +110,7 @@ button:hover {
 }
 
 .social-icons {
- display: flex;
+ /*display: flex;*/
   gap: 20px;
  /* margin-top: 20px; */
 
@@ -127,6 +127,7 @@ button:hover {
 .social-icons a.instagram:hover {
   color: #000000; /* black on hover */
 }
+
 
 
 
