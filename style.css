@@ -85,6 +85,7 @@ section {
 .services-list li {
     margin-bottom: 0.5em;
     font-size: 1.1em;
+    text-align: center;
 }
 
 footer {
@@ -106,3 +107,4 @@ button {
 button:hover {
     background-color: #666;
 }
+
