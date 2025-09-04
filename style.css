@@ -78,14 +78,14 @@ section {
     list-style: none;
     padding: 0;
     display: inline-block;
-    text-align: left;
+    text-align: center;
     margin-top: 1em;
 }
 
 .services-list li {
     margin-bottom: 0.5em;
     font-size: 1.1em;
-    text-align: center;
+    
 }
 
 footer {
@@ -107,4 +107,5 @@ button {
 button:hover {
     background-color: #666;
 }
+
 
