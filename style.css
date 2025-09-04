@@ -15,7 +15,8 @@ body {
     align-items: center;
     justify-content: center;
     text-align: center;
-    overflow: hidden;
+    /*overflow: hidden;*/
+    overflow: auto;
 }
 
 .overlay {
@@ -126,6 +127,7 @@ button:hover {
 .social-icons a.instagram:hover {
   color: #000000; /* black on hover */
 }
+
 
 
 
