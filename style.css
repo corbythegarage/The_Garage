@@ -119,7 +119,7 @@ button:hover {
     color: #c0c0c0;
     transition: 0.3s;
 }
-
+.social-icons a.whatsapp:hover,
 .social-icons a.facebook:hover,
 .social-icons a.instagram:hover {
     color: #000000;
@@ -169,4 +169,5 @@ button:hover {
         font-size: 22px;
     }
 }
+
 
