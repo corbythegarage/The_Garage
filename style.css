@@ -144,7 +144,7 @@ button:hover {
 @media (max-width: 700px) {
     .hero {
         padding: 2em 1em;
-        height: auto; /* allow content to fit */
+        height: 50vh; /* allow content to fit */
     }
     .hero h1 {
         font-size: 2em;
@@ -169,6 +169,7 @@ button:hover {
         font-size: 22px;
     }
 }
+
 
 
 
