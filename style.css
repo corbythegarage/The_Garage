@@ -128,7 +128,7 @@ button:hover {
 /* === RESPONSIVE DESIGN === */
 
 /* Tablets */
-@media (max-width: 992px) {
+@media (max-width: 1200px) {
     .hero h1 {
         font-size: 2.5em;
     }
@@ -169,6 +169,7 @@ button:hover {
         font-size: 22px;
     }
 }
+
 
 
 
