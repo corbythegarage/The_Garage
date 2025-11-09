@@ -11,7 +11,7 @@ document.addEventListener('DOMContentLoaded', function() {
   const bookingForm = document.getElementById('bookingForm');
   const selectedDateTimeInput = document.getElementById('selectedDateTime');
 
-  const PRIMARY_COLOR =  '#c42b39';   //'#0b6cf3';
+  const PRIMARY_COLOR = '#0b6cf3';     //'#c42b39';
   const PRIMARY_DARK = '#075acc';
   const TEXT_ON_PRIMARY = '#ffffff';
 
