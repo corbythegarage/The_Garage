@@ -4,8 +4,8 @@
 // - Lock/mark events based on sheet status
 
 document.addEventListener('DOMContentLoaded', function() {
-  const WEB_APP_URL = 'REPLACE_WITH_YOUR_WEB_APP_URL'; // from Apps Script deployment (do not include ?token)
-  const TOKEN = 'REPLACE_WITH_YOUR_TOKEN'; // must match the TOKEN in Apps Script
+  const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbxNgpzC3KCjEl4ipXGRtlo46WU1liyUu_CV-yr3pIIm5FGUoBMWjvCGOIjX1HWyCDzd1g/exec'; // from Apps Script deployment (do not include ?token)
+  const TOKEN = '9090thegarage9090'; // must match the TOKEN in Apps Script
 
   const calendarEl = document.getElementById('calendar');
   const modal = document.getElementById('bookingModal');
