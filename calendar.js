@@ -1,9 +1,7 @@
 // calendar.js
-// Simple FullCalendar integration for appointment requests.
-// - Stores events in localStorage (so they persist in browser).
-// - On date/time click opens modal and allows user to request an appointment.
-// - On submit, saves event locally and opens the user's email client (mailto) with details.
-// Replace mailto behavior with a backend call for production.
+// FullCalendar integration with color settings matching site theme.
+// - Uses eventColor option to set default event color
+// - Newly created events include background/border/text color to match the design
 
 document.addEventListener('DOMContentLoaded', function() {
   const calendarEl = document.getElementById('calendar');
@@ -12,6 +10,10 @@ document.addEventListener('DOMContentLoaded', function() {
   const cancelButton = document.getElementById('cancelButton');
   const bookingForm = document.getElementById('bookingForm');
   const selectedDateTimeInput = document.getElementById('selectedDateTime');
+
+  const PRIMARY_COLOR = '#0b6cf3';
+  const PRIMARY_DARK = '#075acc';
+  const TEXT_ON_PRIMARY = '#ffffff';
 
   // Load stored events
   function loadEvents() {
@@ -38,9 +40,17 @@ document.addEventListener('DOMContentLoaded', function() {
       center: 'title',
       right: 'dayGridMonth,timeGridWeek,timeGridDay'
     },
-    events: loadEvents(),
+    // Default color for events
+    eventColor: PRIMARY_COLOR,
+    events: loadEvents().map(ev => {
+      // Ensure stored events include color properties for consistent display
+      return Object.assign({}, ev, {
+        backgroundColor: ev.backgroundColor || PRIMARY_COLOR,
+        borderColor: ev.borderColor || PRIMARY_DARK,
+        textColor: ev.textColor || TEXT_ON_PRIMARY
+      });
+    }),
     dateClick: function(info) {
-      // Open modal with default time at 10:00 on the clicked date
       const dt = info.date;
       const defaultISO = new Date(dt.getFullYear(), dt.getMonth(), dt.getDate(), 10, 0, 0).toISOString();
       selectedDateTimeInput.value = defaultISO;
@@ -51,7 +61,12 @@ document.addEventListener('DOMContentLoaded', function() {
       openModal();
     },
     eventClick: function(info) {
-      alert('Booked by: ' + (info.event.extendedProps.name || 'Unknown') + '\nNotes: ' + (info.event.extendedProps.notes || ''));
+      const props = info.event.extendedProps || {};
+      let msg = 'Booked by: ' + (props.name || 'Unknown');
+      if (props.phone) msg += '\nPhone: ' + props.phone;
+      if (props.email) msg += '\nEmail: ' + props.email;
+      if (props.notes) msg += '\nNotes: ' + props.notes;
+      alert(msg);
     }
   });
 
@@ -96,6 +111,9 @@ document.addEventListener('DOMContentLoaded', function() {
       title: 'Appointment: ' + name,
       start: dateTime,
       allDay: false,
+      backgroundColor: PRIMARY_COLOR,
+      borderColor: PRIMARY_DARK,
+      textColor: TEXT_ON_PRIMARY,
       extendedProps: {
         name: name,
         phone: phone,
@@ -106,6 +124,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
     events.push(event);
     saveEvents(events);
+
+    // Add to calendar UI with color properties
     calendar.addEvent(event);
 
     // Open mailto so the shop gets notified (replace with API for production)
