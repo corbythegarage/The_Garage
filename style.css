@@ -1,15 +1,5 @@
 /* === EXISTING STYLES (kept same) === */
-/* Add these variables at the top of your existing style.css (or merge them into it) */
-:root {
-  --primary: #0b6cf3;        /* site primary color */
-  --primary-dark: #075acc;   /* slightly darker */
-  --accent-contrast: #ffffff;
-  --muted: #f5f7fb;
-  --panel-bg: #ffffff;
-  --text: #222;
-}
-
-
+/* Add these variables at the top of your existing style.css (or merge them into it) */7
 body {
     margin: 0;
     font-family: 'Segoe UI', sans-serif;
@@ -181,6 +171,7 @@ button:hover {
         font-size: 22px;
     }
 }
+
 
 
 
