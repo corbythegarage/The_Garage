@@ -1,5 +1,6 @@
 /* === EXISTING STYLES (kept same) === */
-/* Add these variables at the top of your existing style.css (or merge them into it) */7
+/* Add these variables at the top of your existing style.css (or merge them into it) */
+
 body {
     margin: 0;
     font-family: 'Segoe UI', sans-serif;
@@ -171,6 +172,7 @@ button:hover {
         font-size: 22px;
     }
 }
+
 
 
 
