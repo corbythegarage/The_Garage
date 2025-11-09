@@ -1,7 +1,5 @@
-// calendar.js
-// FullCalendar integration with color settings matching site theme.
-// - Uses eventColor option to set default event color
-// - Newly created events include background/border/text color to match the design
+// calendar.js — add create / edit / delete support and persist to localStorage
+// Events now get stable ids so they can be updated/deleted.
 
 document.addEventListener('DOMContentLoaded', function() {
   const calendarEl = document.getElementById('calendar');
@@ -10,12 +8,18 @@ document.addEventListener('DOMContentLoaded', function() {
   const cancelButton = document.getElementById('cancelButton');
   const bookingForm = document.getElementById('bookingForm');
   const selectedDateTimeInput = document.getElementById('selectedDateTime');
+  const deleteButton = document.getElementById('deleteButton');
+  const saveButton = document.getElementById('saveButton');
 
-  const PRIMARY_COLOR = '#0b6cf3';     //'#c42b39';
-  const PRIMARY_DARK = '#075acc';
-  const TEXT_ON_PRIMARY = '#ffffff';
+  // read CSS variables so colors match site theme
+  const rootStyles = getComputedStyle(document.documentElement);
+  const PRIMARY_COLOR = rootStyles.getPropertyValue('--primary').trim() || '#0b6cf3';
+  const PRIMARY_DARK = rootStyles.getPropertyValue('--primary-dark').trim() || '#075acc';
+  const TEXT_ON_PRIMARY = rootStyles.getPropertyValue('--accent-contrast').trim() || '#ffffff';
 
-  // Load stored events
+  // Track currently selected event id (null for new event)
+  let currentEventId = null;
+
   function loadEvents() {
     try {
       const raw = localStorage.getItem('garage_bookings');
@@ -27,6 +31,14 @@ document.addEventListener('DOMContentLoaded', function() {
   function saveEvents(events) {
     localStorage.setItem('garage_bookings', JSON.stringify(events));
   }
+
+  // Ensure loaded events have id and color props
+  const storedEvents = loadEvents().map(ev => Object.assign({}, ev, {
+    id: ev.id || ('evt-' + (new Date(ev.start).getTime())),
+    backgroundColor: ev.backgroundColor || PRIMARY_COLOR,
+    borderColor: ev.borderColor || PRIMARY_DARK,
+    textColor: ev.textColor || TEXT_ON_PRIMARY
+  }));
 
   const calendar = new FullCalendar.Calendar(calendarEl, {
     initialView: 'timeGridWeek',
@@ -40,37 +52,44 @@ document.addEventListener('DOMContentLoaded', function() {
       center: 'title',
       right: 'dayGridMonth,timeGridWeek,timeGridDay'
     },
-    // Default color for events
     eventColor: PRIMARY_COLOR,
-    events: loadEvents().map(ev => {
-      // Ensure stored events include color properties for consistent display
-      return Object.assign({}, ev, {
-        backgroundColor: ev.backgroundColor || PRIMARY_COLOR,
-        borderColor: ev.borderColor || PRIMARY_DARK,
-        textColor: ev.textColor || TEXT_ON_PRIMARY
-      });
-    }),
+    events: storedEvents,
     dateClick: function(info) {
+      currentEventId = null;          // new event
+      clearForm();
       const dt = info.date;
       const defaultISO = new Date(dt.getFullYear(), dt.getMonth(), dt.getDate(), 10, 0, 0).toISOString();
       selectedDateTimeInput.value = defaultISO;
+      showDeleteButton(false);
       openModal();
     },
     select: function(selectionInfo) {
+      currentEventId = null;
+      clearForm();
       selectedDateTimeInput.value = selectionInfo.startStr;
+      showDeleteButton(false);
       openModal();
     },
     eventClick: function(info) {
-      const props = info.event.extendedProps || {};
-      let msg = 'Booked by: ' + (props.name || 'Unknown');
-      if (props.phone) msg += '\nPhone: ' + props.phone;
-      if (props.email) msg += '\nEmail: ' + props.email;
-      if (props.notes) msg += '\nNotes: ' + props.notes;
-      alert(msg);
+      // populate modal with event data for editing or deleting
+      const e = info.event;
+      currentEventId = e.id;
+
+      document.getElementById('customerName').value = (e.extendedProps && e.extendedProps.name) || '';
+      document.getElementById('customerPhone').value = (e.extendedProps && e.extendedProps.phone) || '';
+      document.getElementById('customerEmail').value = (e.extendedProps && e.extendedProps.email) || '';
+      document.getElementById('notes').value = (e.extendedProps && e.extendedProps.notes) || '';
+      selectedDateTimeInput.value = e.start ? e.start.toISOString() : '';
+      showDeleteButton(true);
+      openModal();
     }
   });
 
   calendar.render();
+
+  function showDeleteButton(show) {
+    deleteButton.style.display = show ? 'inline-block' : 'none';
+  }
 
   function openModal() {
     modal.style.display = 'block';
@@ -80,11 +99,18 @@ document.addEventListener('DOMContentLoaded', function() {
     modal.style.display = 'none';
     modal.setAttribute('aria-hidden', 'true');
     bookingForm.reset();
+    currentEventId = null;
+    showDeleteButton(false);
+  }
+
+  function clearForm() {
+    bookingForm.reset();
   }
 
   closeModalBtn.addEventListener('click', closeModal);
   cancelButton.addEventListener('click', closeModal);
 
+  // Save (create or update)
   bookingForm.addEventListener('submit', function(e) {
     e.preventDefault();
     const name = document.getElementById('customerName').value.trim();
@@ -98,52 +124,94 @@ document.addEventListener('DOMContentLoaded', function() {
       return;
     }
 
-    // Basic conflict detection: prevent exact same start time
     const events = loadEvents();
-    const conflict = events.find(ev => ev.start === dateTime);
-    if (conflict) {
-      if (!confirm('This slot is already requested. Do you still want to request it?')) {
-        return;
+
+    if (currentEventId) {
+      // Update existing event
+      // Update in localStorage
+      const idx = events.findIndex(ev => ev.id === currentEventId);
+      if (idx !== -1) {
+        events[idx] = Object.assign({}, events[idx], {
+          title: 'Appointment: ' + name,
+          start: dateTime,
+          extendedProps: { name, phone, email, notes },
+          backgroundColor: PRIMARY_COLOR,
+          borderColor: PRIMARY_DARK,
+          textColor: TEXT_ON_PRIMARY
+        });
       }
+      saveEvents(events);
+
+      // Update calendar event
+      const calEvent = calendar.getEventById(currentEventId);
+      if (calEvent) {
+        calEvent.setProp('title', 'Appointment: ' + name);
+        calEvent.setStart(dateTime);
+        // set color props by removing and re-adding with same id could be done, but FullCalendar allows setProp for styling props:
+        calEvent.setProp('backgroundColor', PRIMARY_COLOR);
+        calEvent.setProp('borderColor', PRIMARY_DARK);
+        calEvent.setProp('textColor', TEXT_ON_PRIMARY);
+        // update extendedProps
+        calEvent.setExtendedProp('name', name);
+        calEvent.setExtendedProp('phone', phone);
+        calEvent.setExtendedProp('email', email);
+        calEvent.setExtendedProp('notes', notes);
+      }
+
+      alert('Appointment updated.');
+    } else {
+      // Create new event
+      const newId = 'evt-' + Date.now();
+      const newEvent = {
+        id: newId,
+        title: 'Appointment: ' + name,
+        start: dateTime,
+        allDay: false,
+        backgroundColor: PRIMARY_COLOR,
+        borderColor: PRIMARY_DARK,
+        textColor: TEXT_ON_PRIMARY,
+        extendedProps: { name, phone, email, notes }
+      };
+
+      events.push(newEvent);
+      saveEvents(events);
+      calendar.addEvent(newEvent);
+
+      // open mailto to notify shop (replace with server-side API in real setup)
+      const subject = encodeURIComponent('New Appointment Request: ' + name);
+      const bodyLines = [
+        'Name: ' + name,
+        'Phone: ' + phone,
+        'Email: ' + email,
+        'Requested Date/Time: ' + dateTime,
+        'Notes: ' + notes
+      ];
+      const body = encodeURIComponent(bodyLines.join('\n'));
+      // TODO: replace youremail@example.com with your real email address
+      const mailTo = 'mailto:thecorbygarage@gmail.com?subject=' + subject + '&body=' + body;
+      window.location.href = mailTo;
+
+      alert('Appointment requested. Your email client was opened so you can send the request.');
     }
 
-    const event = {
-      title: 'Appointment: ' + name,
-      start: dateTime,
-      allDay: false,
-      backgroundColor: PRIMARY_COLOR,
-      borderColor: PRIMARY_DARK,
-      textColor: TEXT_ON_PRIMARY,
-      extendedProps: {
-        name: name,
-        phone: phone,
-        email: email,
-        notes: notes
-      }
-    };
+    closeModal();
+  });
 
-    events.push(event);
+  // Delete
+  deleteButton.addEventListener('click', function() {
+    if (!currentEventId) return;
+    if (!confirm('Delete this appointment? This will remove it permanently.')) return;
+
+    // Remove from localStorage
+    let events = loadEvents();
+    events = events.filter(ev => ev.id !== currentEventId);
     saveEvents(events);
 
-    // Add to calendar UI with color properties
-    calendar.addEvent(event);
+    // Remove from FullCalendar
+    const calEvent = calendar.getEventById(currentEventId);
+    if (calEvent) calEvent.remove();
 
-    // Open mailto so the shop gets notified (replace with API for production)
-    const subject = encodeURIComponent('New Appointment Request: ' + name);
-    const bodyLines = [
-      'Name: ' + name,
-      'Phone: ' + phone,
-      'Email: ' + email,
-      'Requested Date/Time: ' + dateTime,
-      'Notes: ' + notes
-    ];
-    const body = encodeURIComponent(bodyLines.join('\n'));
-    // TODO: replace youremail@example.com with your real email address
-    const mailTo = 'mailto:corbythegarage@gmail.com?subject=' + subject + '&body=' + body;
-    window.location.href = mailTo;
-
-    alert('Appointment requested. Your email client was opened so you can send the request.');
-
+    alert('Appointment deleted.');
     closeModal();
   });
 });
