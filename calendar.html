@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Book an Appointment — The Garage</title>
+
+  <!-- FullCalendar styles -->
+  <link href="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css" rel="stylesheet" />
+
+  <!-- Page styles -->
+  <link rel="stylesheet" href="calendar.css" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="hero small-hero">
+    <div class="overlay"></div>
+    <div class="hero-content">
+      <img src="logo.jpeg" alt="The Garage Logo" class="hero-logo" />
+      <h1>Book an Appointment</h1>
+      <p>Select a date/time and request an appointment — we'll confirm with you.</p>
+      <a href="index.html" class="hero-button secondary">Back to Home</a>
+    </div>
+  </header>
+
+  <main class="page-content">
+    <section id="calendar-section">
+      <div id="calendar"></div>
+    </section>
+
+    <!-- Booking Modal -->
+    <div id="bookingModal" class="modal" aria-hidden="true">
+      <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+        <button id="closeModal" class="modal-close" aria-label="Close">&times;</button>
+        <h3 id="modalTitle">Request Appointment</h3>
+        <form id="bookingForm">
+          <label>
+            Name
+            <input type="text" id="customerName" required />
+          </label>
+          <label>
+            Phone
+            <input type="tel" id="customerPhone" required />
+          </label>
+          <label>
+            Email
+            <input type="email" id="customerEmail" />
+          </label>
+          <label>
+            Selected Date/Time
+            <input type="text" id="selectedDateTime" readonly />
+          </label>
+          <label>
+            Notes
+            <textarea id="notes" rows="3" placeholder="Describe issue or service needed"></textarea>
+          </label>
+          <div class="modal-actions">
+            <button type="submit" class="btn">Request Appointment</button>
+            <button type="button" id="cancelButton" class="btn secondary">Cancel</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    <p>&copy; 2025 The Garage. All rights reserved.</p>
+  </footer>
+
+  <!-- FullCalendar JS -->
+  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js"></script>
+
+  <!-- Custom calendar behavior -->
+  <script src="calendar.js"></script>
+</body>
+</html>
