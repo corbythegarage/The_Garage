@@ -2,16 +2,18 @@
 // - Periodically fetch events from the sheet web app
 // - POST new bookings to web app (server-side conflict check)
 // - Lock/mark events based on sheet status
+// Fixed: do not force 10:00 — use clicked/selected time and datetime-local input handling.
 
 document.addEventListener('DOMContentLoaded', function() {
-  const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbxNgpzC3KCjEl4ipXGRtlo46WU1liyUu_CV-yr3pIIm5FGUoBMWjvCGOIjX1HWyCDzd1g/exec'; // from Apps Script deployment (do not include ?token)
-  const TOKEN = '9090thegarage9090'; // must match the TOKEN in Apps Script
+  const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbxNgpzC3KCjEl4ipXGRtlo46WU1liyUu_CV-yr3pIIm5FGUoBMWjvCGOIjX1HWyCDzd1g/exec';
+  const TOKEN = '9090thegarage9090';
 
   const calendarEl = document.getElementById('calendar');
   const modal = document.getElementById('bookingModal');
   const closeModalBtn = document.getElementById('closeModal');
   const cancelButton = document.getElementById('cancelButton');
   const bookingForm = document.getElementById('bookingForm');
+  // IMPORTANT: change this input in your calendar.html to type="datetime-local"
   const selectedDateTimeInput = document.getElementById('selectedDateTime');
   const deleteButton = document.getElementById('deleteButton');
   const saveButton = document.getElementById('saveButton');
@@ -23,6 +25,24 @@ document.addEventListener('DOMContentLoaded', function() {
   const PRIMARY_COLOR = rootStyles.getPropertyValue('--primary').trim() || '#0b6cf3';
   const PRIMARY_DARK = rootStyles.getPropertyValue('--primary-dark').trim() || '#075acc';
   const TEXT_ON_PRIMARY = rootStyles.getPropertyValue('--accent-contrast').trim() || '#ffffff';
+
+  // helper: convert Date -> "YYYY-MM-DDTHH:mm" (local) for datetime-local input
+  function toLocalDatetimeInputValue(date) {
+    const pad = n => String(n).padStart(2, '0');
+    const year = date.getFullYear();
+    const month = pad(date.getMonth() + 1);
+    const day = pad(date.getDate());
+    const hours = pad(date.getHours());
+    const minutes = pad(date.getMinutes());
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+  }
+
+  // helper: convert a datetime-local value (local) to ISO UTC string
+  function fromLocalInputToISOString(localValue) {
+    // localValue is "YYYY-MM-DDTHH:mm" (browser creates Date in local timezone)
+    const d = new Date(localValue);
+    return d.toISOString(); // converts to UTC ISO with Z
+  }
 
   // FullCalendar instance
   const calendar = new FullCalendar.Calendar(calendarEl, {
@@ -46,7 +66,11 @@ document.addEventListener('DOMContentLoaded', function() {
       document.getElementById('customerPhone').value = (e.extendedProps && e.extendedProps.phone) || '';
       document.getElementById('customerEmail').value = (e.extendedProps && e.extendedProps.email) || '';
       document.getElementById('notes').value = (e.extendedProps && e.extendedProps.notes) || '';
-      selectedDateTimeInput.value = e.start ? e.start.toISOString() : '';
+      if (e.start) {
+        selectedDateTimeInput.value = toLocalDatetimeInputValue(new Date(e.start));
+      } else {
+        selectedDateTimeInput.value = '';
+      }
       showDeleteButton(true);
       openModal();
     }
@@ -69,7 +93,6 @@ document.addEventListener('DOMContentLoaded', function() {
       const fcEvents = items.map(it => {
         const status = (it.status || '').toLowerCase();
         const isBusy = (status === 'confirmed' || status === 'requested');
-        // Use different color for cancelled or free
         const bg = isBusy ? PRIMARY_COLOR : '#9e9e9e';
         const border = isBusy ? PRIMARY_DARK : '#666';
         const textColor = isBusy ? TEXT_ON_PRIMARY : '#000';
@@ -88,12 +111,10 @@ document.addEventListener('DOMContentLoaded', function() {
             notes: it.notes,
             status: it.status
           },
-          // make busy events non-draggable and visually "locked"
           editable: false
         };
       });
 
-      // Remove all existing events and add fresh ones
       calendar.getEvents().forEach(ev => ev.remove());
       for (const ev of fcEvents) calendar.addEvent(ev);
     } catch (err) {
@@ -125,21 +146,22 @@ document.addEventListener('DOMContentLoaded', function() {
   closeModalBtn.addEventListener('click', closeModal);
   cancelButton.addEventListener('click', closeModal);
 
-  // On dateClick / select handlers (if you want them) - keep earlier logic
+  // dateClick: use the clicked date/time instead of forcing 10:00
   calendar.setOption('dateClick', function(info) {
     currentEventId = null;
     bookingForm.reset();
-    const dt = info.date;
-    const defaultISO = new Date(dt.getFullYear(), dt.getMonth(), dt.getDate(), 10, 0, 0).toISOString();
-    selectedDateTimeInput.value = defaultISO;
+    const clickedDate = info.date; // includes time if user clicked on a time slot
+    selectedDateTimeInput.value = toLocalDatetimeInputValue(clickedDate);
     showDeleteButton(false);
     openModal();
   });
 
+  // select (drag to select a range): use selection start
   calendar.setOption('select', function(selectionInfo) {
     currentEventId = null;
     bookingForm.reset();
-    selectedDateTimeInput.value = selectionInfo.startStr;
+    // selectionInfo.start is an ISO; convert to Date then to local input format
+    selectedDateTimeInput.value = toLocalDatetimeInputValue(new Date(selectionInfo.start));
     showDeleteButton(false);
     openModal();
   });
@@ -150,20 +172,22 @@ document.addEventListener('DOMContentLoaded', function() {
     const name = document.getElementById('customerName').value.trim();
     const phone = document.getElementById('customerPhone').value.trim();
     const email = document.getElementById('customerEmail').value.trim();
-    const dateTime = document.getElementById('selectedDateTime').value;
+    const dateTimeLocal = document.getElementById('selectedDateTime').value;
     const notes = document.getElementById('notes').value.trim();
 
-    if (!name || !phone || !dateTime) {
+    if (!name || !phone || !dateTimeLocal) {
       alert('Please fill name, phone and selected date/time.');
       return;
     }
 
-    // Build payload
+    // convert local datetime-local to ISO UTC
+    const startISO = fromLocalInputToISOString(dateTimeLocal);
+    const endISO = new Date(new Date(startISO).getTime() + 60*60*1000).toISOString();
+
     const payload = {
       token: TOKEN,
-      start: dateTime,
-      // default to one-hour slot; you may add end input in the form later
-      end: new Date(new Date(dateTime).getTime() + 60*60*1000).toISOString(),
+      start: startISO,
+      end: endISO,
       title: 'Appointment: ' + name,
       name,
       phone,
@@ -184,12 +208,9 @@ document.addEventListener('DOMContentLoaded', function() {
       try { json = JSON.parse(text); } catch(_) { json = {raw: text}; }
 
       if (res.status === 409) {
-        // conflict
         const body = typeof json === 'object' ? json : { message: text };
         alert('Slot conflict: this time is already requested/confirmed. Please pick another time.');
-        // Optionally show conflicting entry details
         console.warn('Conflict response', body);
-        // Reload events to show current state
         await fetchEvents();
         return;
       }
@@ -198,7 +219,6 @@ document.addEventListener('DOMContentLoaded', function() {
         return;
       }
 
-      // Success — refresh events and optionally open mailto or show confirmation
       await fetchEvents();
       alert('Booking requested successfully. We will confirm soon.');
       closeModal();
@@ -208,15 +228,13 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   });
 
-  // Delete (client-side deletion is supported only if you implement a delete endpoint in Apps Script)
+  // Delete handler remains the same (POST action=delete)
   const delBtn = document.getElementById('deleteButton');
   if (delBtn) {
     delBtn.addEventListener('click', async function() {
       if (!currentEventId) return;
       if (!confirm('Delete this appointment?')) return;
 
-      // For deletion we can implement a simple "mark status=cancelled" by POSTing with same id
-      // If your Apps Script supports a "delete" action, call it. Example below uses a POST with action=delete
       try {
         const payload = { token: TOKEN, action: 'delete', id: currentEventId };
         const res = await fetch(WEB_APP_URL + '?token=' + encodeURIComponent(TOKEN), {
