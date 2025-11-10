@@ -5,7 +5,7 @@
 // Fixed: do not force 10:00 — use clicked/selected time and datetime-local input handling.
 
 document.addEventListener('DOMContentLoaded', function() {
-  const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbxNgpzC3KCjEl4ipXGRtlo46WU1liyUu_CV-yr3pIIm5FGUoBMWjvCGOIjX1HWyCDzd1g/exec';
+  const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbzRe-gQLGwnsOcEMvV6cuPHlzgLt4H7tHdXHHGpWiiU9dXGPvA8XOrxEEuDeEFqpxxc-Q/exec';
   const TOKEN = '9090thegarage9090';
 
   const calendarEl = document.getElementById('calendar');
