@@ -6,7 +6,7 @@
 
 document.addEventListener('DOMContentLoaded', function() {
   const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbzRe-gQLGwnsOcEMvV6cuPHlzgLt4H7tHdXHHGpWiiU9dXGPvA8XOrxEEuDeEFqpxxc-Q/exec';
-  const TOKEN = '9090thegarage9090';
+  const TOKEN = '90909090';
 
   const calendarEl = document.getElementById('calendar');
   const modal = document.getElementById('bookingModal');
