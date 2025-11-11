@@ -5,13 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Book an Appointment — The Garage</title>
 
+  <!-- ensure main variables load first -->
+  <link rel="stylesheet" href="style.css" />
   <!-- FullCalendar styles -->
   <link href="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css" rel="stylesheet" />
-
   <!-- Page styles -->
-  <link rel="stylesheet" href="style.css" />
   <link rel="stylesheet" href="calendar.css" />
-  
 </head>
 <body>
   <header class="hero small-hero">
@@ -20,7 +19,7 @@
       <img src="logo.jpeg" alt="The Garage Logo" class="hero-logo" />
       <h1>Book an Appointment</h1>
       <p>Select a date/time and request an appointment — we'll confirm with you.</p>
-      <a href="index.html" class="hero-button">Back to Home</a>
+      <a href="index.html" class="hero-button secondary">Back to Home</a>
     </div>
   </header>
 
@@ -47,15 +46,15 @@
             Email
             <input type="email" id="customerEmail" />
           </label>
-          <!-- in your calendar.html booking form: -->
           <label>
-          Selected Date/Time
-          <input type="datetime-local" id="selectedDateTime" required />
+            Selected Date/Time
+            <input type="text" id="selectedDateTime" readonly />
           </label>
           <label>
             Notes
             <textarea id="notes" rows="3" placeholder="Describe issue or service needed"></textarea>
           </label>
+
           <div class="modal-actions">
             <button type="submit" class="btn" id="saveButton">Save</button>
             <button type="button" id="deleteButton" class="btn secondary" style="display:none;">Delete</button>
