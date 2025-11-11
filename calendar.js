@@ -58,7 +58,7 @@ document.addEventListener('DOMContentLoaded', function() {
       currentEventId = null;          // new event
       clearForm();
       const dt = info.date;
-      const defaultISO = new Date(dt.getFullYear(), dt.getMonth(), dt.getDate(), 10, 0, 0).toISOString();
+      const defaultISO = dt.toISOString();//const defaultISO = new Date(dt.getFullYear(), dt.getMonth(), dt.getDate(), 08, 0, 0).toISOString();
       selectedDateTimeInput.value = defaultISO;
       showDeleteButton(false);
       openModal();
