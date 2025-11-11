@@ -1,50 +1,45 @@
-// calendar.js — sync with Google Sheets via Apps Script Web App
-// - Periodically fetch events from the sheet web app
-// - POST new bookings to web app (server-side conflict check)
-// - Lock/mark events based on sheet status
-// Fixed: do not force 10:00 — use clicked/selected time and datetime-local input handling.
+// calendar.js — add create / edit / delete support and persist to localStorage
+// Events now get stable ids so they can be updated/deleted.
 
 document.addEventListener('DOMContentLoaded', function() {
-  const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbyzsSZKWlE63Bn1UTig_Oa9rtrXzAi_rmP_EqRIV_pqL5S66oJuoWLtZiNuVnL0elKXvA/exec';
-  const TOKEN = '90';
-
   const calendarEl = document.getElementById('calendar');
   const modal = document.getElementById('bookingModal');
   const closeModalBtn = document.getElementById('closeModal');
   const cancelButton = document.getElementById('cancelButton');
   const bookingForm = document.getElementById('bookingForm');
-  // IMPORTANT: change this input in your calendar.html to type="datetime-local"
   const selectedDateTimeInput = document.getElementById('selectedDateTime');
   const deleteButton = document.getElementById('deleteButton');
   const saveButton = document.getElementById('saveButton');
 
-  let currentEventId = null;
-
-  // read CSS variables
+  // read CSS variables so colors match site theme
   const rootStyles = getComputedStyle(document.documentElement);
   const PRIMARY_COLOR = rootStyles.getPropertyValue('--primary').trim() || '#0b6cf3';
   const PRIMARY_DARK = rootStyles.getPropertyValue('--primary-dark').trim() || '#075acc';
   const TEXT_ON_PRIMARY = rootStyles.getPropertyValue('--accent-contrast').trim() || '#ffffff';
 
-  // helper: convert Date -> "YYYY-MM-DDTHH:mm" (local) for datetime-local input
-  function toLocalDatetimeInputValue(date) {
-    const pad = n => String(n).padStart(2, '0');
-    const year = date.getFullYear();
-    const month = pad(date.getMonth() + 1);
-    const day = pad(date.getDate());
-    const hours = pad(date.getHours());
-    const minutes = pad(date.getMinutes());
-    return `${year}-${month}-${day}T${hours}:${minutes}`;
+  // Track currently selected event id (null for new event)
+  let currentEventId = null;
+
+  function loadEvents() {
+    try {
+      const raw = localStorage.getItem('garage_bookings');
+      return raw ? JSON.parse(raw) : [];
+    } catch (e) {
+      return [];
+    }
+  }
+  function saveEvents(events) {
+    localStorage.setItem('garage_bookings', JSON.stringify(events));
   }
 
-  // helper: convert a datetime-local value (local) to ISO UTC string
-  function fromLocalInputToISOString(localValue) {
-    // localValue is "YYYY-MM-DDTHH:mm" (browser creates Date in local timezone)
-    const d = new Date(localValue);
-    return d.toISOString(); // converts to UTC ISO with Z
-  }
+  // Ensure loaded events have id and color props
+  const storedEvents = loadEvents().map(ev => Object.assign({}, ev, {
+    id: ev.id || ('evt-' + (new Date(ev.start).getTime())),
+    backgroundColor: ev.backgroundColor || PRIMARY_COLOR,
+    borderColor: ev.borderColor || PRIMARY_DARK,
+    textColor: ev.textColor || TEXT_ON_PRIMARY
+  }));
 
-  // FullCalendar instance
   const calendar = new FullCalendar.Calendar(calendarEl, {
     initialView: 'timeGridWeek',
     selectable: true,
@@ -57,20 +52,34 @@ document.addEventListener('DOMContentLoaded', function() {
       center: 'title',
       right: 'dayGridMonth,timeGridWeek,timeGridDay'
     },
-    events: [], // will load via fetchEvents()
+    eventColor: PRIMARY_COLOR,
+    events: storedEvents,
+    dateClick: function(info) {
+      currentEventId = null;          // new event
+      clearForm();
+      const dt = info.date;
+      const defaultISO = new Date(dt.getFullYear(), dt.getMonth(), dt.getDate(), 10, 0, 0).toISOString();
+      selectedDateTimeInput.value = defaultISO;
+      showDeleteButton(false);
+      openModal();
+    },
+    select: function(selectionInfo) {
+      currentEventId = null;
+      clearForm();
+      selectedDateTimeInput.value = selectionInfo.startStr;
+      showDeleteButton(false);
+      openModal();
+    },
     eventClick: function(info) {
-      // populate form for edit/delete
+      // populate modal with event data for editing or deleting
       const e = info.event;
       currentEventId = e.id;
+
       document.getElementById('customerName').value = (e.extendedProps && e.extendedProps.name) || '';
       document.getElementById('customerPhone').value = (e.extendedProps && e.extendedProps.phone) || '';
       document.getElementById('customerEmail').value = (e.extendedProps && e.extendedProps.email) || '';
       document.getElementById('notes').value = (e.extendedProps && e.extendedProps.notes) || '';
-      if (e.start) {
-        selectedDateTimeInput.value = toLocalDatetimeInputValue(new Date(e.start));
-      } else {
-        selectedDateTimeInput.value = '';
-      }
+      selectedDateTimeInput.value = e.start ? e.start.toISOString() : '';
       showDeleteButton(true);
       openModal();
     }
@@ -78,53 +87,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
   calendar.render();
 
-  // Fetch events from Google Sheet web app
-  async function fetchEvents() {
-    try {
-      const url = `${WEB_APP_URL}?token=${encodeURIComponent(TOKEN)}`;
-      const res = await fetch(url);
-      if (!res.ok) {
-        console.warn('Failed to fetch events from sheet', res.status);
-        return;
-      }
-      const items = await res.json();
-
-      // Map sheet rows to FullCalendar events. Use status to color/lock.
-      const fcEvents = items.map(it => {
-        const status = (it.status || '').toLowerCase();
-        const isBusy = (status === 'confirmed' || status === 'requested');
-        const bg = isBusy ? PRIMARY_COLOR : '#9e9e9e';
-        const border = isBusy ? PRIMARY_DARK : '#666';
-        const textColor = isBusy ? TEXT_ON_PRIMARY : '#000';
-        return {
-          id: it.id,
-          title: it.title || ('Appointment: ' + (it.name || '')),
-          start: it.start,
-          end: it.end || undefined,
-          backgroundColor: it.backgroundColor || bg,
-          borderColor: it.borderColor || border,
-          textColor: it.textColor || textColor,
-          extendedProps: {
-            name: it.name,
-            phone: it.phone,
-            email: it.email,
-            notes: it.notes,
-            status: it.status
-          },
-          editable: false
-        };
-      });
-
-      calendar.getEvents().forEach(ev => ev.remove());
-      for (const ev of fcEvents) calendar.addEvent(ev);
-    } catch (err) {
-      console.error('fetchEvents error', err);
-    }
+  function showDeleteButton(show) {
+    deleteButton.style.display = show ? 'inline-block' : 'none';
   }
-
-  // initial load and polling (every 45 seconds)
-  fetchEvents();
-  setInterval(fetchEvents, 45000);
 
   function openModal() {
     modal.style.display = 'block';
@@ -138,122 +103,115 @@ document.addEventListener('DOMContentLoaded', function() {
     showDeleteButton(false);
   }
 
-  function showDeleteButton(show) {
-    const db = document.getElementById('deleteButton');
-    if (db) db.style.display = show ? 'inline-block' : 'none';
+  function clearForm() {
+    bookingForm.reset();
   }
 
   closeModalBtn.addEventListener('click', closeModal);
   cancelButton.addEventListener('click', closeModal);
 
-  // dateClick: use the clicked date/time instead of forcing 10:00
-  calendar.setOption('dateClick', function(info) {
-    currentEventId = null;
-    bookingForm.reset();
-    const clickedDate = info.date; // includes time if user clicked on a time slot
-    selectedDateTimeInput.value = toLocalDatetimeInputValue(clickedDate);
-    showDeleteButton(false);
-    openModal();
-  });
-
-  // select (drag to select a range): use selection start
-  calendar.setOption('select', function(selectionInfo) {
-    currentEventId = null;
-    bookingForm.reset();
-    // selectionInfo.start is an ISO; convert to Date then to local input format
-    selectedDateTimeInput.value = toLocalDatetimeInputValue(new Date(selectionInfo.start));
-    showDeleteButton(false);
-    openModal();
-  });
-
-  // Submit booking (will POST to Apps Script)
-  bookingForm.addEventListener('submit', async function(e) {
+  // Save (create or update)
+  bookingForm.addEventListener('submit', function(e) {
     e.preventDefault();
     const name = document.getElementById('customerName').value.trim();
     const phone = document.getElementById('customerPhone').value.trim();
     const email = document.getElementById('customerEmail').value.trim();
-    const dateTimeLocal = document.getElementById('selectedDateTime').value;
+    const dateTime = document.getElementById('selectedDateTime').value;
     const notes = document.getElementById('notes').value.trim();
 
-    if (!name || !phone || !dateTimeLocal) {
-      alert('Please fill name, phone and selected date/time.');
+    if (!name || !phone || !dateTime) {
+      alert('Please fill in name, phone and selected date/time.');
       return;
     }
 
-    // convert local datetime-local to ISO UTC
-    const startISO = fromLocalInputToISOString(dateTimeLocal);
-    const endISO = new Date(new Date(startISO).getTime() + 60*60*1000).toISOString();
+    const events = loadEvents();
 
-    const payload = {
-      token: TOKEN,
-      start: startISO,
-      end: endISO,
-      title: 'Appointment: ' + name,
-      name,
-      phone,
-      email,
-      notes,
-      status: 'requested'
-    };
-
-    try {
-      const res = await fetch(WEB_APP_URL + '?token=' + encodeURIComponent(TOKEN), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-
-      const text = await res.text();
-      let json = null;
-      try { json = JSON.parse(text); } catch(_) { json = {raw: text}; }
-
-      if (res.status === 409) {
-        const body = typeof json === 'object' ? json : { message: text };
-        alert('Slot conflict: this time is already requested/confirmed. Please pick another time.');
-        console.warn('Conflict response', body);
-        await fetchEvents();
-        return;
+    if (currentEventId) {
+      // Update existing event
+      // Update in localStorage
+      const idx = events.findIndex(ev => ev.id === currentEventId);
+      if (idx !== -1) {
+        events[idx] = Object.assign({}, events[idx], {
+          title: 'Appointment: ' + name,
+          start: dateTime,
+          extendedProps: { name, phone, email, notes },
+          backgroundColor: PRIMARY_COLOR,
+          borderColor: PRIMARY_DARK,
+          textColor: TEXT_ON_PRIMARY
+        });
       }
-      if (!res.ok) {
-        alert('Failed to create booking: ' + (json && json.error ? json.error : res.statusText));
-        return;
+      saveEvents(events);
+
+      // Update calendar event
+      const calEvent = calendar.getEventById(currentEventId);
+      if (calEvent) {
+        calEvent.setProp('title', 'Appointment: ' + name);
+        calEvent.setStart(dateTime);
+        // set color props by removing and re-adding with same id could be done, but FullCalendar allows setProp for styling props:
+        calEvent.setProp('backgroundColor', PRIMARY_COLOR);
+        calEvent.setProp('borderColor', PRIMARY_DARK);
+        calEvent.setProp('textColor', TEXT_ON_PRIMARY);
+        // update extendedProps
+        calEvent.setExtendedProp('name', name);
+        calEvent.setExtendedProp('phone', phone);
+        calEvent.setExtendedProp('email', email);
+        calEvent.setExtendedProp('notes', notes);
       }
 
-      await fetchEvents();
-      alert('Booking requested successfully. We will confirm soon.');
-      closeModal();
-    } catch (err) {
-      console.error('submit booking error', err);
-      alert('Error sending booking. Try again later.');
+      alert('Appointment updated.');
+    } else {
+      // Create new event
+      const newId = 'evt-' + Date.now();
+      const newEvent = {
+        id: newId,
+        title: 'Appointment: ' + name,
+        start: dateTime,
+        allDay: false,
+        backgroundColor: PRIMARY_COLOR,
+        borderColor: PRIMARY_DARK,
+        textColor: TEXT_ON_PRIMARY,
+        extendedProps: { name, phone, email, notes }
+      };
+
+      events.push(newEvent);
+      saveEvents(events);
+      calendar.addEvent(newEvent);
+
+      // open mailto to notify shop (replace with server-side API in real setup)
+      const subject = encodeURIComponent('New Appointment Request: ' + name);
+      const bodyLines = [
+        'Name: ' + name,
+        'Phone: ' + phone,
+        'Email: ' + email,
+        'Requested Date/Time: ' + dateTime,
+        'Notes: ' + notes
+      ];
+      const body = encodeURIComponent(bodyLines.join('\n'));
+      // TODO: replace youremail@example.com with your real email address
+      const mailTo = 'mailto:youremail@example.com?subject=' + subject + '&body=' + body;
+      window.location.href = mailTo;
+
+      alert('Appointment requested. Your email client was opened so you can send the request.');
     }
+
+    closeModal();
   });
 
-  // Delete handler remains the same (POST action=delete)
-  const delBtn = document.getElementById('deleteButton');
-  if (delBtn) {
-    delBtn.addEventListener('click', async function() {
-      if (!currentEventId) return;
-      if (!confirm('Delete this appointment?')) return;
+  // Delete
+  deleteButton.addEventListener('click', function() {
+    if (!currentEventId) return;
+    if (!confirm('Delete this appointment? This will remove it permanently.')) return;
 
-      try {
-        const payload = { token: TOKEN, action: 'delete', id: currentEventId };
-        const res = await fetch(WEB_APP_URL + '?token=' + encodeURIComponent(TOKEN), {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-        const json = await res.json();
-        if (!res.ok) {
-          alert('Failed to delete: ' + (json && json.error ? json.error : res.statusText));
-          return;
-        }
-        await fetchEvents();
-        alert('Appointment deleted.');
-        closeModal();
-      } catch (err) {
-        console.error('delete error', err);
-        alert('Delete failed.');
-      }
-    });
-  }
+    // Remove from localStorage
+    let events = loadEvents();
+    events = events.filter(ev => ev.id !== currentEventId);
+    saveEvents(events);
+
+    // Remove from FullCalendar
+    const calEvent = calendar.getEventById(currentEventId);
+    if (calEvent) calEvent.remove();
+
+    alert('Appointment deleted.');
+    closeModal();
+  });
 });
