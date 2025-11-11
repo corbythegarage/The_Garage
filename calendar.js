@@ -1,6 +1,3 @@
-// calendar.js — add create / edit / delete support and persist to localStorage
-// Events now get stable ids so they can be updated/deleted.
-
 document.addEventListener('DOMContentLoaded', function() {
   const calendarEl = document.getElementById('calendar');
   const modal = document.getElementById('bookingModal');
@@ -20,6 +17,9 @@ document.addEventListener('DOMContentLoaded', function() {
   // Track currently selected event id (null for new event)
   let currentEventId = null;
 
+  // ZMIANA 1: Usuwamy funkcje loadEvents() i saveEvents() oparte na localStorage,
+  // ponieważ teraz będziemy mieli stałe, zdefiniowane przez nas dane.
+  /*
   function loadEvents() {
     try {
       const raw = localStorage.getItem('garage_bookings');
@@ -31,19 +31,36 @@ document.addEventListener('DOMContentLoaded', function() {
   function saveEvents(events) {
     localStorage.setItem('garage_bookings', JSON.stringify(events));
   }
+  */
 
-  // Ensure loaded events have id and color props
-  const storedEvents = loadEvents().map(ev => Object.assign({}, ev, {
-    id: ev.id || ('evt-' + (new Date(ev.start).getTime())),
-    backgroundColor: ev.backgroundColor || PRIMARY_COLOR,
-    borderColor: ev.borderColor || PRIMARY_DARK,
-    textColor: ev.textColor || TEXT_ON_PRIMARY
-  }));
+
+  // ZMIANA 2: Definiujemy swoje stałe terminy zajętości.
+  // Użytkownik nie może ich modyfikować.
+  const storedEvents = [
+    {
+      id: "evt-1",
+      title: "Zajęty - spotkanie z klientem",
+      start: "2025-11-14T09:00:00",
+      end: "2025-11-14T10:30:00",
+      backgroundColor: "#dc3545", // Czerwony kolor dla zajętego terminu
+      borderColor: "#c82333"
+    },
+    {
+      id: "evt-2",
+      title: "Zajęty - inna blokada",
+      start: "2025-11-16T15:00:00",
+      end: "2025-11-16T16:00:00",
+      backgroundColor: "#dc3545",
+      borderColor: "#c82333"
+    }
+    // Dodaj więcej swoich blokad tutaj...
+  ];
+
 
   const calendar = new FullCalendar.Calendar(calendarEl, {
     initialView: 'timeGridWeek',
     selectable: true,
-    editable: false,
+    editable: false, // Użytkownik nie może edytować/przesuwać zdarzeń
     allDaySlot: false,
     slotMinTime: "08:00:00",
     slotMaxTime: "18:00:00",
@@ -53,12 +70,12 @@ document.addEventListener('DOMContentLoaded', function() {
       right: 'dayGridMonth,timeGridWeek,timeGridDay'
     },
     eventColor: PRIMARY_COLOR,
-    events: storedEvents,
+    events: storedEvents, // Kalendarz używa teraz tylko Twoich stałych zdarzeń
     dateClick: function(info) {
       currentEventId = null;          // new event
       clearForm();
       const dt = info.date;
-      const defaultISO = dt.toISOString();//const defaultISO = new Date(dt.getFullYear(), dt.getMonth(), dt.getDate(), 08, 0, 0).toISOString();
+      const defaultISO = dt.toISOString();
       selectedDateTimeInput.value = defaultISO;
       showDeleteButton(false);
       openModal();
@@ -71,17 +88,19 @@ document.addEventListener('DOMContentLoaded', function() {
       openModal();
     },
     eventClick: function(info) {
-      // populate modal with event data for editing or deleting
+      // ZMIANA 3: Po kliknięciu na istniejące zdarzenie, wyświetlamy tylko informację,
+      // a nie otwieramy formularza edycji, bo użytkownik nie może edytować Twoich zajętości.
+      const e = info.event;
+      alert('Ten termin jest już zajęty: ' + e.title + ' (' + e.start.toLocaleString() + ')');
+      // Usuwamy kod, który otwierał modal i wypełniał formularz danymi zdarzenia:
+      /*
       const e = info.event;
       currentEventId = e.id;
-
       document.getElementById('customerName').value = (e.extendedProps && e.extendedProps.name) || '';
-      document.getElementById('customerPhone').value = (e.extendedProps && e.extendedProps.phone) || '';
-      document.getElementById('customerEmail').value = (e.extendedProps && e.extendedProps.email) || '';
-      document.getElementById('notes').value = (e.extendedProps && e.extendedProps.notes) || '';
-      selectedDateTimeInput.value = e.start ? e.start.toISOString() : '';
+      // ... reszta wypełniania pól ...
       showDeleteButton(true);
       openModal();
+      */
     }
   });
 
@@ -90,6 +109,7 @@ document.addEventListener('DOMContentLoaded', function() {
   function showDeleteButton(show) {
     deleteButton.style.display = show ? 'inline-block' : 'none';
   }
+  // ... (reszta funkcji openModal, closeModal, clearForm, addEventListeners dla zamknięcia modala) ...
 
   function openModal() {
     modal.style.display = 'block';
@@ -110,7 +130,7 @@ document.addEventListener('DOMContentLoaded', function() {
   closeModalBtn.addEventListener('click', closeModal);
   cancelButton.addEventListener('click', closeModal);
 
-  // Save (create or update)
+  // Save (tylko wysłanie maila, bez zapisu)
   bookingForm.addEventListener('submit', function(e) {
     e.preventDefault();
     const name = document.getElementById('customerName').value.trim();
@@ -124,79 +144,42 @@ document.addEventListener('DOMContentLoaded', function() {
       return;
     }
 
+    // ZMIANA 4: Całkowicie usuwamy logikę zapisu do localStorage i aktualizacji kalendarza.
+    // Zastępujemy ją tylko generowaniem linku mailto:.
+
+    /*
     const events = loadEvents();
-
     if (currentEventId) {
-      // Update existing event
-      // Update in localStorage
-      const idx = events.findIndex(ev => ev.id === currentEventId);
-      if (idx !== -1) {
-        events[idx] = Object.assign({}, events[idx], {
-          title: 'Appointment: ' + name,
-          start: dateTime,
-          extendedProps: { name, phone, email, notes },
-          backgroundColor: PRIMARY_COLOR,
-          borderColor: PRIMARY_DARK,
-          textColor: TEXT_ON_PRIMARY
-        });
-      }
-      saveEvents(events);
-
-      // Update calendar event
-      const calEvent = calendar.getEventById(currentEventId);
-      if (calEvent) {
-        calEvent.setProp('title', 'Appointment: ' + name);
-        calEvent.setStart(dateTime);
-        // set color props by removing and re-adding with same id could be done, but FullCalendar allows setProp for styling props:
-        calEvent.setProp('backgroundColor', PRIMARY_COLOR);
-        calEvent.setProp('borderColor', PRIMARY_DARK);
-        calEvent.setProp('textColor', TEXT_ON_PRIMARY);
-        // update extendedProps
-        calEvent.setExtendedProp('name', name);
-        calEvent.setExtendedProp('phone', phone);
-        calEvent.setExtendedProp('email', email);
-        calEvent.setExtendedProp('notes', notes);
-      }
-
-      alert('Appointment updated.');
+      // USUWAMY CAŁY BLOK IF - nie ma edycji
     } else {
-      // Create new event
-      const newId = 'evt-' + Date.now();
-      const newEvent = {
-        id: newId,
-        title: 'Appointment: ' + name,
-        start: dateTime,
-        allDay: false,
-        backgroundColor: PRIMARY_COLOR,
-        borderColor: PRIMARY_DARK,
-        textColor: TEXT_ON_PRIMARY,
-        extendedProps: { name, phone, email, notes }
-      };
-
-      events.push(newEvent);
-      saveEvents(events);
-      calendar.addEvent(newEvent);
-
-      // open mailto to notify shop (replace with server-side API in real setup)
-      const subject = encodeURIComponent('New Appointment Request: ' + name);
-      const bodyLines = [
-        'Name: ' + name,
-        'Phone: ' + phone,
-        'Email: ' + email,
-        'Requested Date/Time: ' + dateTime,
-        'Notes: ' + notes
-      ];
-      const body = encodeURIComponent(bodyLines.join('\n'));
-      // TODO: replace youremail@example.com with your real email address
-      const mailTo = 'mailto:corbythegarage@gmail.com?subject=' + subject + '&body=' + body;
-      window.location.href = mailTo;
-
-      alert('Appointment requested. Your email client was opened so you can send the request.');
+      // USUWAMY CAŁY BLOK ELSE Z TWORZENIEM NOWEGO ZDARZENIA I ZAPISYWANIEM
     }
+    */
+
+    // Pozostawiamy tylko ten fragment, który generuje e-mail:
+
+    // open mailto to notify shop
+    const subject = encodeURIComponent('New Appointment Request: ' + name);
+    const bodyLines = [
+      'Name: ' + name,
+      'Phone: ' + phone,
+      'Email: ' + email,
+      'Requested Date/Time: ' + dateTime,
+      'Notes: ' + notes
+    ];
+    const body = encodeURIComponent(bodyLines.join('\n'));
+    // TODO: replace youremail@example.com with your real email address
+    const mailTo = 'mailto:corbythegarage@gmail.com?subject=' + subject + '&body=' + body;
+    window.location.href = mailTo;
+
+    alert('Appointment requested. Your email client was opened so you can send the request.');
+    
 
     closeModal();
   });
 
+  // ZMIANA 5: Całkowicie usuwamy listener dla deleteButton, ponieważ użytkownik nie może usuwać rezerwacji.
+  /*
   // Delete
   deleteButton.addEventListener('click', function() {
     if (!currentEventId) return;
@@ -214,4 +197,5 @@ document.addEventListener('DOMContentLoaded', function() {
     alert('Appointment deleted.');
     closeModal();
   });
+  */
 });
