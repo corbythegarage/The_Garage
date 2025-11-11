@@ -7,7 +7,7 @@ document.addEventListener('DOMContentLoaded', function() {
   const closeModalBtn = document.getElementById('closeModal');
   const cancelButton = document.getElementById('cancelButton');
   const bookingForm = document.getElementById('bookingForm');
-  const selectedDateTimeInput = document.getElementById('selectedDateTime');
+  const dateTimeLocal = document.getElementById('selectedDateTime').value;
   const deleteButton = document.getElementById('deleteButton');
   const saveButton = document.getElementById('saveButton');
 
