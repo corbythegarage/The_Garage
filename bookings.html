@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>Booking Form (JSONP)</title>
+  <title>Booking Form</title>
 </head>
 <body>
   <h1>Book an Appointment</h1>
@@ -22,23 +22,13 @@
     const ENDPOINT = "https://script.google.com/macros/s/AKfycbyzsSZKWlE63Bn1UTig_Oa9rtrXzAi_rmP_EqRIV_pqL5S66oJuoWLtZiNuVnL0elKXvA/exec";
     const TOKEN = "90";
 
-    // JSONP loader
-    function loadJSONP(url, callbackName) {
-      const script = document.createElement("script");
-      script.src = url + "&callback=" + callbackName;
-      document.body.appendChild(script);
-    }
-
-    // Callback for bookings
-    function handleBookings(data) {
+    async function fetchBookings() {
+      const res = await fetch(`${ENDPOINT}?token=${TOKEN}`);
+      const data = await res.json();
       document.getElementById("bookings").textContent = JSON.stringify(data, null, 2);
     }
 
-    // Fetch bookings on page load
-    loadJSONP(`${ENDPOINT}?token=${TOKEN}`, "handleBookings");
-
-    // Submit booking (via hidden iframe to avoid CORS)
-    document.getElementById("bookingForm").addEventListener("submit", (e) => {
+    document.getElementById("bookingForm").addEventListener("submit", async (e) => {
       e.preventDefault();
       const formData = new FormData(e.target);
       const payload = {
@@ -50,27 +40,18 @@
         notes: formData.get("notes")
       };
 
-      // Send booking using a hidden form POST
-      const iframe = document.createElement("iframe");
-      iframe.style.display = "none";
-      document.body.appendChild(iframe);
-
-      const form = document.createElement("form");
-      form.method = "POST";
-      form.action = ENDPOINT;
-      form.target = iframe.name = "hiddenFrame";
-
-      const input = document.createElement("input");
-      input.type = "hidden";
-      input.name = "data";
-      input.value = JSON.stringify(payload);
-      form.appendChild(input);
-
-      document.body.appendChild(form);
-      form.submit();
-
-      alert("Booking submitted! Refresh the page to see it.");
+      const res = await fetch(ENDPOINT, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      const result = await res.json();
+      alert(JSON.stringify(result));
+      fetchBookings(); // refresh list
     });
+
+    // Load bookings on page load
+    fetchBookings();
   </script>
 </body>
 </html>
