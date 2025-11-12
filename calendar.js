@@ -25,7 +25,7 @@ document.addEventListener('DOMContentLoaded', function()
     console.log(storedEvents);
   }
 
-  loadEvents(); 
+ 
 
   const calendar = new FullCalendar.Calendar(calendarEl,  
   {
@@ -70,7 +70,7 @@ document.addEventListener('DOMContentLoaded', function()
   });
 
   calendar.render();
-
+   loadEvents(); 
   function showDeleteButton(show) {
     deleteButton.style.display = show ? 'inline-block' : 'none';
   }
