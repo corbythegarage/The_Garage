@@ -20,7 +20,7 @@ document.addEventListener('DOMContentLoaded', function()
   
   async function loadEvents() 
   {
-    const response = await fetch('/events.json'); // path depends on where you serve the file
+    const response = await fetch('/The_Garage/events.json'); // path depends on where you serve the file
     const storedEvents = await response.json();
     console.log(storedEvents);
   }
