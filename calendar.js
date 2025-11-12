@@ -1,4 +1,5 @@
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function() 
+{
   const calendarEl = document.getElementById('calendar');
   const modal = document.getElementById('bookingModal');
   const closeModalBtn = document.getElementById('closeModal');
@@ -16,57 +17,34 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // Track currently selected event id (null for new event)
   let currentEventId = null;
-
-  // ZMIANA 1: Usuwamy funkcje loadEvents() i saveEvents() oparte na localStorage,
-  // ponieważ teraz będziemy mieli stałe, zdefiniowane przez nas dane.
-  /*
-  function loadEvents() {
-    try {
-      const raw = localStorage.getItem('garage_bookings');
-      return raw ? JSON.parse(raw) : [];
-    } catch (e) {
-      return [];
-    }
-  }
-  function saveEvents(events) {
-    localStorage.setItem('garage_bookings', JSON.stringify(events));
-  }
-  */
-
-
-  // ZMIANA 2: Definiujemy swoje stałe terminy zajętości.
-  // Użytkownik nie może ich modyfikować.
- 
-    
-  async function loadEvents() {
-  const response = await fetch('/events.json'); // path depends on where you serve the file
-  const storedEvents = await response.json();
-
-  // Now you can use storedEvents just like before
-  console.log(storedEvents);
-  // e.g. pass to your calendar library
-}
-
-loadEvents();
-    // Dodaj więcej swoich blokad tutaj...
   
+  async function loadEvents() 
+  {
+    const response = await fetch('/events.json'); // path depends on where you serve the file
+    const storedEvents = await response.json();
+    console.log(storedEvents);
+  }
 
+  loadEvents(); 
 
-  const calendar = new FullCalendar.Calendar(calendarEl, {
+  const calendar = new FullCalendar.Calendar(calendarEl,  
+  {
     initialView: 'timeGridWeek',
     selectable: true,
     editable: false, // Użytkownik nie może edytować/przesuwać zdarzeń
     allDaySlot: false,
     slotMinTime: "08:00:00",
     slotMaxTime: "18:00:00",
-    headerToolbar: {
+    headerToolbar: 
+      {
       left: 'prev,next today',
       center: 'title',
       right: 'dayGridMonth,timeGridWeek,timeGridDay'
-    },
+      },
     eventColor: PRIMARY_COLOR,
     events: storedEvents, // Kalendarz używa teraz tylko Twoich stałych zdarzeń
-    dateClick: function(info) {
+    dateClick: function(info) 
+      {
       currentEventId = null;          // new event
       clearForm();
       const dt = info.date;
@@ -74,29 +52,21 @@ loadEvents();
       selectedDateTimeInput.value = defaultISO;
       showDeleteButton(false);
       openModal();
-    },
-    select: function(selectionInfo) {
-      currentEventId = null;
-      clearForm();
-      selectedDateTimeInput.value = selectionInfo.startStr;
-      showDeleteButton(false);
-      openModal();
-    },
-    eventClick: function(info) {
-      // ZMIANA 3: Po kliknięciu na istniejące zdarzenie, wyświetlamy tylko informację,
-      // a nie otwieramy formularza edycji, bo użytkownik nie może edytować Twoich zajętości.
-      const e = info.event;
-      alert('Ten termin jest już zajęty: ' + e.title + ' (' + e.start.toLocaleString() + ')');
-      // Usuwamy kod, który otwierał modal i wypełniał formularz danymi zdarzenia:
-      /*
-      const e = info.event;
-      currentEventId = e.id;
-      document.getElementById('customerName').value = (e.extendedProps && e.extendedProps.name) || '';
-      // ... reszta wypełniania pól ...
-      showDeleteButton(true);
-      openModal();
-      */
-    }
+      },
+        
+      select: function(selectionInfo) 
+        {
+        currentEventId = null;
+        clearForm();
+        selectedDateTimeInput.value = selectionInfo.startStr;
+        showDeleteButton(false);
+        openModal();
+        },
+        eventClick: function(info) 
+        {
+        const e = info.event;
+        alert('Ten termin jest już zajęty: ' + e.title + ' (' + e.start.toLocaleString() + ')');
+        }
   });
 
   calendar.render();
