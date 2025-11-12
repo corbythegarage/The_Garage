@@ -1,0 +1,18 @@
+[
+  {
+    "id": "evt-1",
+    "title": "Zajęty - spotkanie z klientem",
+    "start": "2025-11-14T09:00:00",
+    "end": "2025-11-14T10:30:00",
+    "backgroundColor": "#dc3545",
+    "borderColor": "#c82333"
+  },
+  {
+    "id": "evt-2",
+    "title": "Zajęty - inna blokada",
+    "start": "2025-11-16T15:00:00",
+    "end": "2025-11-16T16:00:00",
+    "backgroundColor": "#dc3545",
+    "borderColor": "#c82333"
+  }
+]
