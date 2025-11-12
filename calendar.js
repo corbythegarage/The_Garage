@@ -36,7 +36,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // ZMIANA 2: Definiujemy swoje stałe terminy zajętości.
   // Użytkownik nie może ich modyfikować.
-  const storedEvents = [
+ 
     
   async function loadEvents() {
   const response = await fetch('/events.json'); // path depends on where you serve the file
@@ -49,7 +49,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 loadEvents();
     // Dodaj więcej swoich blokad tutaj...
-  ];
+  
 
 
   const calendar = new FullCalendar.Calendar(calendarEl, {
