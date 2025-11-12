@@ -37,22 +37,17 @@ document.addEventListener('DOMContentLoaded', function() {
   // ZMIANA 2: Definiujemy swoje stałe terminy zajętości.
   // Użytkownik nie może ich modyfikować.
   const storedEvents = [
-    {
-      id: "evt-1",
-      title: "Zajęty - spotkanie z klientem",
-      start: "2025-11-14T09:00:00",
-      end: "2025-11-14T10:30:00",
-      backgroundColor: "#dc3545", // Czerwony kolor dla zajętego terminu
-      borderColor: "#c82333"
-    },
-    {
-      id: "evt-2",
-      title: "Zajęty - inna blokada",
-      start: "2025-11-16T15:00:00",
-      end: "2025-11-16T16:00:00",
-      backgroundColor: "#dc3545",
-      borderColor: "#c82333"
-    }
+    
+  async function loadEvents() {
+  const response = await fetch('/events.json'); // path depends on where you serve the file
+  const storedEvents = await response.json();
+
+  // Now you can use storedEvents just like before
+  console.log(storedEvents);
+  // e.g. pass to your calendar library
+}
+
+loadEvents();
     // Dodaj więcej swoich blokad tutaj...
   ];
 
