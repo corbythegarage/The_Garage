@@ -26,7 +26,7 @@ document.addEventListener('DOMContentLoaded', function()
   }
 
  
-
+  loadEvents(); 
   const calendar = new FullCalendar.Calendar(calendarEl,  
   {
     initialView: 'timeGridWeek',
@@ -42,7 +42,7 @@ document.addEventListener('DOMContentLoaded', function()
       right: 'dayGridMonth,timeGridWeek,timeGridDay'
       },
     eventColor: PRIMARY_COLOR,
-    events: storedEvents, // Kalendarz używa teraz tylko Twoich stałych zdarzeń
+    events: storedEvents, 
     dateClick: function(info) 
       {
       currentEventId = null;          // new event
@@ -70,7 +70,7 @@ document.addEventListener('DOMContentLoaded', function()
   });
 
   calendar.render();
-   loadEvents(); 
+   
   function showDeleteButton(show) {
     deleteButton.style.display = show ? 'inline-block' : 'none';
   }
