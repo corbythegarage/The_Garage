@@ -127,7 +127,7 @@ document.addEventListener('DOMContentLoaded', function() {
     alert('Appointment requested. Your email client was opened so you can send the request.');
 
        // 🔐 Ask for password
-  const enteredPassword = prompt("Enter admin password to confirm booking:");
+  const enteredPassword = prompt("Please send the email and after our review we add your request to our calendar:");
   if (enteredPassword === ADMIN_PASSWORD) {
     //events.push(event);
     saveEvents(events);
