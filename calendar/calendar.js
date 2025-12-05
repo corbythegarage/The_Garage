@@ -106,7 +106,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     events.push(event);
     saveEvents(events);
-    calendar.addEvent(event);
+    //calendar.addEvent(event);
 
     // Open mailto so the shop gets notified (replace with API for production)
     const subject = encodeURIComponent('New Appointment Request: ' + name);
