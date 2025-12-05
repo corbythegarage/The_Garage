@@ -42,7 +42,7 @@ document.addEventListener('DOMContentLoaded', function() {
     dateClick: function(info) {
       // Open modal with default time at 10:00 on the clicked date
       const dt = info.date;
-      const defaultISO = new Date(dt.getFullYear(), dt.getMonth(), dt.getDate(), 10, 0, 0).toISOString();
+      const defaultISO = new Date(dt.getFullYear(), dt.getMonth(), dt.getDate(), dt.getTime()).toISOString();
       selectedDateTimeInput.value = defaultISO;
       openModal();
     },
