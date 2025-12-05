@@ -1,78 +1,318 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Book an Appointment — The Garage</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Garage Booking Calendar</title>
 
-  <!-- ensure main variables load first -->
-  <link rel="stylesheet" href="../style.css" />
-  <!-- FullCalendar styles -->
-  <link href="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css" rel="stylesheet" />
-  <!-- Page styles -->
-  <link rel="stylesheet" href="calendar.css" />
+  <!-- FullCalendar CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.css" rel="stylesheet">
+
+  <style>
+    :root{
+      --primary: #0b6cf3;
+      --primary-dark: #075acc;
+      --accent-contrast: #ffffff;
+      --modal-bg: rgba(0,0,0,0.5);
+      --card-bg: #fff;
+      --muted: #666;
+      --radius: 8px;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+    }
+
+    body{ margin: 0; padding: 18px; background:#f6f8fb; color:#111; }
+    h1{ margin: 0 0 12px 0; font-size:20px; }
+
+    #calendar { max-width: 1100px; margin: 12px auto; background: #fff; border-radius: 8px; padding: 8px; box-shadow: 0 6px 18px rgba(12,20,40,0.06); }
+
+    /* Modal */
+    .modal-backdrop {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: var(--modal-bg);
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+    }
+    .modal-card {
+      width: 100%;
+      max-width: 520px;
+      background: var(--card-bg);
+      border-radius: var(--radius);
+      padding: 18px;
+      box-shadow: 0 10px 30px rgba(12,20,40,0.12);
+    }
+    .modal-row { display:flex; gap:8px; margin-bottom:10px; }
+    label { display:block; font-size:13px; color:var(--muted); margin-bottom:6px; }
+    input[type="text"], input[type="email"], input[type="datetime-local"], textarea {
+      width:100%; padding:8px 10px; border-radius:6px; border:1px solid #e3e7ee; font-size:14px;
+    }
+    textarea { min-height:80px; resize:vertical; }
+    .modal-actions { display:flex; gap:8px; justify-content:flex-end; margin-top:12px; }
+    button { padding:8px 12px; border-radius:6px; border:0; cursor:pointer; font-weight:600; }
+    .btn-primary { background:var(--primary); color:var(--accent-contrast); }
+    .btn-danger { background:#e53e3e; color:#fff; }
+    .btn-muted { background:#eef2f7; color:#333; }
+
+    /* small helpers */
+    .hidden { display:none; }
+    .muted { color:var(--muted); font-size:13px; margin-top:6px; }
+    @media (max-width:640px){
+      .modal-card{ margin: 12px; width: calc(100% - 24px); }
+    }
+  </style>
 </head>
 <body>
-  <header class="hero small-hero">
-    <div class="overlay"></div>
-    <div class="hero-content">
-      <img src="../logo.jpeg" alt="The Garage Logo" class="hero-logo" />
-      <h1>Book an Appointment</h1>
-      <p>Select a date/time and request an appointment — we'll confirm with you.</p>
-      <a href="../index.html" class="hero-button secondary">Back to Home</a>
-    </div>
-  </header>
+  <h1>Garage Booking Calendar</h1>
+  <div id="calendar"></div>
 
-  <main class="page-content">
-    <section id="calendar-section">
-      <div id="calendar"></div>
-    </section>
+  <!-- Modal -->
+  <div id="bookingModal" class="modal-backdrop" aria-hidden="true" role="dialog" aria-modal="true">
+    <div class="modal-card" role="document">
+      <form id="bookingForm">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+          <strong id="modalTitle">Request Appointment</strong>
+          <button type="button" id="closeModal" aria-label="Close" class="btn-muted" style="padding:6px 8px;">✕</button>
+        </div>
 
-    <!-- Booking Modal -->
-    <div id="bookingModal" class="modal" aria-hidden="true">
-      <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
-        <button id="closeModal" class="modal-close" aria-label="Close">&times;</button>
-        <h3 id="modalTitle">Request Appointment</h3>
-        <form id="bookingForm">
-          <label>
-            Name
-            <input type="text" id="customerName" required />
-          </label>
-          <label>
-            Phone
-            <input type="tel" id="customerPhone" required />
-          </label>
-          <label>
-            Email
-            <input type="email" id="customerEmail" />
-          </label>
-          <label>
-            Selected Date/Time
-            <input type="text" id="selectedDateTime" readonly />
-          </label>
-          <label>
-            Notes
-            <textarea id="notes" rows="3" placeholder="Describe issue or service needed"></textarea>
-          </label>
+        <div class="modal-row" style="flex-direction:column;">
+          <label for="customerName">Name</label>
+          <input id="customerName" name="customerName" type="text" required />
+        </div>
 
-          <div class="modal-actions">
-            <button type="submit" class="btn" id="saveButton">Save</button>
-            <button type="button" id="deleteButton" class="btn secondary" style="display:none;">Delete</button>
-            <button type="button" id="cancelButton" class="btn secondary">Cancel</button>
+        <div class="modal-row" style="gap:10px;">
+          <div style="flex:1;">
+            <label for="customerPhone">Phone</label>
+            <input id="customerPhone" name="customerPhone" type="text" required />
           </div>
-        </form>
-      </div>
-    </div>
-  </main>
+          <div style="flex:1;">
+            <label for="customerEmail">Email</label>
+            <input id="customerEmail" name="customerEmail" type="email" />
+          </div>
+        </div>
 
-  <footer>
-    <p>&copy; 2025 The Garage. All rights reserved.</p>
-  </footer>
+        <div class="modal-row" style="flex-direction:column;">
+          <label for="selectedDateTime">Date and time</label>
+          <input id="selectedDateTime" name="selectedDateTime" type="datetime-local" required />
+        </div>
+
+        <div class="modal-row" style="flex-direction:column;">
+          <label for="notes">Notes</label>
+          <textarea id="notes" name="notes" placeholder="Vehicle, service required, etc."></textarea>
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" id="deleteButton" class="btn-danger hidden">Delete</button>
+          <button type="button" id="cancelButton" class="btn-muted">Cancel</button>
+          <button type="submit" id="saveButton" class="btn-primary">Save</button>
+        </div>
+
+        <div class="muted">Bookings are stored in your browser. Replace local persistence with a server API for real bookings.</div>
+      </form>
+    </div>
+  </div>
 
   <!-- FullCalendar JS -->
-  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
 
-  <!-- Custom calendar behavior -->
-  <script src="calendar.js"></script>
-</body>
-</html>
+  <script>
+  // calendar.js — create / edit / delete support with localStorage persistence
+  document.addEventListener('DOMContentLoaded', function () {
+    'use strict';
+
+    const calendarEl = document.getElementById('calendar');
+    const modal = document.getElementById('bookingModal');
+    const closeModalBtn = document.getElementById('closeModal');
+    const cancelButton = document.getElementById('cancelButton');
+    const bookingForm = document.getElementById('bookingForm');
+    const selectedDateTimeInput = document.getElementById('selectedDateTime');
+    const deleteButton = document.getElementById('deleteButton');
+    const saveButton = document.getElementById('saveButton');
+
+    const rootStyles = getComputedStyle(document.documentElement);
+    const PRIMARY_COLOR = rootStyles.getPropertyValue('--primary').trim() || '#0b6cf3';
+    const PRIMARY_DARK = rootStyles.getPropertyValue('--primary-dark').trim() || '#075acc';
+    const TEXT_ON_PRIMARY = rootStyles.getPropertyValue('--accent-contrast').trim() || '#ffffff';
+
+    let currentEventId = null;
+    let saveTimeout = null;
+
+    function safeParseJSON(raw) {
+      try { return JSON.parse(raw); } catch (e) { return null; }
+    }
+
+    function loadEvents() {
+      try {
+        const raw = localStorage.getItem('garage_bookings');
+        const arr = raw ? safeParseJSON(raw) : [];
+        return Array.isArray(arr) ? arr : [];
+      } catch (e) {
+        console.error('loadEvents error', e);
+        return [];
+      }
+    }
+
+    function saveEvents(events) {
+      try {
+        if (saveTimeout) clearTimeout(saveTimeout);
+        saveTimeout = setTimeout(() => {
+          try { localStorage.setItem('garage_bookings', JSON.stringify(events)); }
+          catch (err) { console.error('saveEvents error', err); }
+        }, 150);
+      } catch (e) { console.error('saveEvents outer error', e); }
+    }
+
+    function makeId() {
+      if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+      return 'evt-' + Date.now() + '-' + Math.floor(Math.random() * 10000);
+    }
+
+    const storedEvents = loadEvents().map(ev => {
+      const start = ev.start || ev.date || ev.startStr || null;
+      return Object.assign({}, ev, {
+        id: ev.id || makeId(),
+        start: start,
+        allDay: !!ev.allDay,
+        backgroundColor: ev.backgroundColor || PRIMARY_COLOR,
+        borderColor: ev.borderColor || PRIMARY_DARK,
+        textColor: ev.textColor || TEXT_ON_PRIMARY,
+        extendedProps: ev.extendedProps || {
+          name: ev.name || '',
+          phone: ev.phone || '',
+          email: ev.email || '',
+          notes: ev.notes || ''
+        }
+      });
+    });
+
+    const calendar = new FullCalendar.Calendar(calendarEl, {
+      initialView: 'timeGridWeek',
+      selectable: true,
+      editable: false,
+      allDaySlot: false,
+      slotMinTime: "08:00:00",
+      slotMaxTime: "18:00:00",
+      headerToolbar: {
+        left: 'prev,next today',
+        center: 'title',
+        right: 'dayGridMonth,timeGridWeek,timeGridDay'
+      },
+      eventColor: PRIMARY_COLOR,
+      events: storedEvents,
+      dateClick: function (info) {
+        currentEventId = null;
+        clearForm();
+        const dt = info.date;
+        // set local datetime-local value (no timezone suffix)
+        const local = new Date(dt.getFullYear(), dt.getMonth(), dt.getDate(), 10, 0, 0);
+        selectedDateTimeInput.value = local.toISOString().slice(0,16);
+        showDeleteButton(false);
+        openModal();
+      },
+      select: function (selectionInfo) {
+        currentEventId = null;
+        clearForm();
+        // selectionInfo.startStr is ISO-like; convert to local datetime-local format
+        const d = new Date(selectionInfo.startStr);
+        selectedDateTimeInput.value = d.toISOString().slice(0,16);
+        showDeleteButton(false);
+        openModal();
+      },
+      eventClick: function (info) {
+        const e = info.event;
+        currentEventId = e.id;
+        const ext = e.extendedProps || {};
+        document.getElementById('customerName').value = ext.name || '';
+        document.getElementById('customerPhone').value = ext.phone || '';
+        document.getElementById('customerEmail').value = ext.email || '';
+        document.getElementById('notes').value = ext.notes || '';
+        selectedDateTimeInput.value = e.start ? e.start.toISOString().slice(0,16) : '';
+        showDeleteButton(true);
+        openModal();
+      }
+    });
+
+    calendar.render();
+
+    function showDeleteButton(show) {
+      deleteButton.classList.toggle('hidden', !show);
+    }
+
+    function openModal() {
+      modal.style.display = 'flex';
+      modal.setAttribute('aria-hidden', 'false');
+      const first = bookingForm.querySelector('input, textarea, select');
+      if (first) first.focus();
+    }
+
+    function closeModal() {
+      modal.style.display = 'none';
+      modal.setAttribute('aria-hidden', 'true');
+      bookingForm.reset();
+      currentEventId = null;
+      showDeleteButton(false);
+      try { calendar.unselect(); } catch (e) {}
+    }
+
+    function clearForm() { bookingForm.reset(); }
+
+    closeModalBtn.addEventListener('click', closeModal);
+    cancelButton.addEventListener('click', closeModal);
+
+    function isConflict(events, startISO, excludeId = null) {
+      if (!startISO) return false;
+      return events.some(ev => {
+        if (!ev || !ev.start) return false;
+        if (excludeId && ev.id === excludeId) return false;
+        try {
+          const a = new Date(ev.start).toISOString();
+          const b = new Date(startISO).toISOString();
+          return a === b;
+        } catch (e) { return false; }
+      });
+    }
+
+    bookingForm.addEventListener('submit', async function (e) {
+      e.preventDefault();
+
+      const name = document.getElementById('customerName').value.trim();
+      const phone = document.getElementById('customerPhone').value.trim();
+      const email = document.getElementById('customerEmail').value.trim();
+      const dateTimeLocal = document.getElementById('selectedDateTime').value;
+      const notes = document.getElementById('notes').value.trim();
+
+      if (!name || !phone || !dateTimeLocal) {
+        alert('Please fill in name, phone and selected date/time.');
+        return;
+      }
+
+      // Convert local datetime-local string to ISO UTC string for storage
+      const parsed = Date.parse(dateTimeLocal);
+      if (Number.isNaN(parsed)) {
+        alert('Selected date/time is invalid. Please choose a valid date/time.');
+        return;
+      }
+      const iso = new Date(parsed).toISOString();
+
+      const events = loadEvents();
+
+      if (isConflict(events, iso, currentEventId)) {
+        if (!confirm('There is already an appointment at this time. Continue anyway?')) return;
+      }
+
+      if (currentEventId) {
+        const idx = events.findIndex(ev => ev.id === currentEventId);
+        if (idx !== -1) {
+          events[idx] = Object.assign({}, events[idx], {
+            title: 'Appointment: ' + name,
+            start: iso,
+            allDay: false,
+            backgroundColor: PRIMARY_COLOR,
+            borderColor: PRIMARY_DARK,
+            textColor: TEXT_ON_PRIMARY,
+            extendedProps: { name, phone, email, notes }
+          });
+          saveEvents(events);
+        }
+
