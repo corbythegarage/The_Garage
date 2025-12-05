@@ -108,16 +108,7 @@ document.addEventListener('DOMContentLoaded', function() {
     //saveEvents(events);
     //calendar.addEvent(event);
 
-    // 🔐 Ask for password
-  const enteredPassword = prompt("Enter admin password to confirm booking:");
-  if (enteredPassword === ADMIN_PASSWORD) {
-    //events.push(event);
-    saveEvents(events);
-    calendar.addEvent(event);
-    alert("Event saved successfully!");
-  } else {
-    alert("Incorrect password. Event not saved.");
-  }
+ 
 
     // Open mailto so the shop gets notified (replace with API for production)
     const subject = encodeURIComponent('New Appointment Request: ' + name);
@@ -134,6 +125,17 @@ document.addEventListener('DOMContentLoaded', function() {
     window.location.href = mailTo;
 
     alert('Appointment requested. Your email client was opened so you can send the request.');
+
+       // 🔐 Ask for password
+  const enteredPassword = prompt("Enter admin password to confirm booking:");
+  if (enteredPassword === ADMIN_PASSWORD) {
+    //events.push(event);
+    saveEvents(events);
+    calendar.addEvent(event);
+    alert("Event saved successfully!");
+  } else {
+    alert("Incorrect password. Event not saved.");
+  }
 
     closeModal();
   });
