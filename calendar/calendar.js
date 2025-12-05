@@ -119,7 +119,7 @@ document.addEventListener('DOMContentLoaded', function() {
     ];
     const body = encodeURIComponent(bodyLines.join('\n'));
     // TODO: replace youremail@example.com with your real email address
-    const mailTo = 'mailto:youremail@example.com?subject=' + subject + '&body=' + body;
+    const mailTo = 'mailto:corbythegarage@gmail.com?subject=' + subject + '&body=' + body;
     window.location.href = mailTo;
 
     alert('Appointment requested. Your email client was opened so you can send the request.');
