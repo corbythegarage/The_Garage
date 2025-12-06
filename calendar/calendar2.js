@@ -104,9 +104,9 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     };
 
-    //events.push(event);
-    //saveEvents(events);
-    //calendar.addEvent(event);
+    events.push(event);
+    saveEvents(events);
+    calendar.addEvent(event);
 
  
 
@@ -126,17 +126,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
     alert('Appointment requested. Your email client was opened so you can send the request.');
 
-   // 🔐 Ask for password
-  const enteredPassword = prompt("Please send the email and after our review we add your request to our calendar:");
-  if (enteredPassword === ADMIN_PASSWORD) {
-    events.push(event);
-    saveEvents(events);
-    calendar.addEvent(event);
-    alert("Event saved successfully!");
-  } else {
-    alert("Incorrect password. Event not saved.");
-  }
-
-    closeModal();
+     closeModal();
   });
 });
