@@ -124,19 +124,23 @@ document.addEventListener('DOMContentLoaded', function() {
     const mailTo = 'mailto:corbythegarage@gmail.com?subject=' + subject + '&body=' + body;
     window.location.href = mailTo;
 
-    alert('Appointment requested. Your email client was opened so you can send the request.');
+    //alert('Appointment requested. Your email client was opened so you can send the request.');
 
    // 🔐 Ask for password
   const enteredPassword = prompt("Please send the email and after our review we add your request to our calendar:");
-  if (enteredPassword === 123) {
+  if (enteredPassword === 'ABCDEF') 
+    {
     events.push(event);
     saveEvents(events);
     calendar.addEvent(event);
     alert("Event saved successfully!");
-  } else {
-    alert("Incorrect password. Event not saved.");
-  }
+   //closeModal();
+    } 
+  else 
+    {
+    //alert("Incorrect password. Event not saved.");
+    }
 
-    closeModal();
+   closeModal();
   });
 });
